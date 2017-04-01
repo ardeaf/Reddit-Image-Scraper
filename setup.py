@@ -12,14 +12,6 @@ setup(
     author='ardeaf',
     author_email='ardeaf@gmail.com',
     url='https://github.com/ardeaf/reddit-image-scraper',
-    keywords=['tag1', 'tag2'],
-    install_requires=[
-        'aiofiles',
-        'aiohttp',
-        'Delorean',
-        'praw',
-    ],
     classifiers=[],
-
 )
 
