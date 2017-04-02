@@ -188,7 +188,7 @@ def parse_args(args):
 # Main function.
 def main(args):
     # Get our args stored in parser.
-    parser = args(args)
+    parser = parse_args(args)
     verbose = parser.verbose
     begin_date = parser.begin_date
     end_date = parser.end_date
@@ -206,7 +206,7 @@ def main(args):
 
         user_vars = convert_dates(dates)
         user_vars['subreddit'] = subreddit
-
+        user_vars['no_input()_run'] = True
     else:
         # Get our user's input for which subreddit and dates they wish to use.
         user_vars = get_user_input()
@@ -215,10 +215,17 @@ def main(args):
         args = [user_vars['subreddit'], user_vars['begin_epoch'], user_vars['end_epoch']]
         # Gotta add in the '-v' argument if user passed it in.
         if verbose:
+            user_vars['verbose_on'] = True
             args.append('-v')
-        async.main(args)
-        return True
 
+        async.main(args)
+
+        # Update user_vars to indicate that we ran the async module.
+        user_vars['async_ran'] = True
+        print("Scraping complete.")
+        return user_vars
+    else:
+        user_vars['async_ran'] = False
     # Get the subs to download from accessreddit
     subs_to_download = accessreddit.subs_to_download(user_vars['subreddit'],
                                                      user_vars['begin_epoch'], user_vars['end_epoch'],
@@ -239,6 +246,7 @@ def main(args):
         print(total_end_msg.format(time.strftime("%H:%M:%S"), (datetime.now() - total_dl_time_start).total_seconds()))
 
     print("Scraping complete.")
+    return user_vars
 
 if __name__ == "__main__":
     main(sys.argv[1:])

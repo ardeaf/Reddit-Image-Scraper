@@ -9,7 +9,8 @@ import pytest
 
 from redditimagescraper import scrape
 
-# Should get the "valid_year" result back, which are years from 2005 -> this year
+
+# Given both invalid and valid months, should only return the valid month (last entry)
 @pytest.mark.parametrize('valid_year', [str(year) for year in range(2005, datetime.now().year + 1)])
 def test_what_year(valid_year):
     years = ["9999", "0", "", " ", "-2015", "-30", str(10 ^ 1000), valid_year]
@@ -18,7 +19,7 @@ def test_what_year(valid_year):
         assert scrape.what_year('start') == int(valid_year)
 
 
-# Should get valid months (1 -> 12)
+# Given both invalid and valid months, should only return the valid month (last entry)
 @pytest.mark.parametrize('valid_month', [str(month) for month in range(1, 13)])
 def test_what_month(valid_month):
     months = ["9999", "00000", "0", "", " ", "-8", "-1", str(10 ^ 1000), valid_month]
@@ -27,7 +28,7 @@ def test_what_month(valid_month):
         assert scrape.what_month() == int(valid_month)
 
 
-# Should get valid days, depending on month and leap year.
+# Given both invalid and valid days, should only return the valid day
 @pytest.mark.parametrize('valid_day', [day for day in range(1, 32)])
 def test_what_day(valid_day):
     days = ["99", "0", "", " ", "-20", str(10 ^ 1000), str(valid_day)]
@@ -53,7 +54,7 @@ def test_what_day(valid_day):
         assert scrape.what_day(month, year) == int(valid_day)
 
 
-# Pass in lists of invalid/valid years>months>days, should get the valid result back.
+# Given lists of invalid/valid years>months>days, should get the valid date back in epoch time.
 @pytest.mark.parametrize('test_input, expected', [
     (['2010-1-1', '2010-1-1'], [1262304000.0, 1262390399.999999]),
     (['2015-1-1', '2016-2-29'], [1420070400.0, 1456790399.999999]),
@@ -93,7 +94,7 @@ def test_get_user_input(test_input, expected):
                                            'subreddit': 'hamsters'}
 
 
-# Should pass if filenames match.
+# Given a list of images, should download each one to folder. Check by looking at filenames in current working dir.
 @pytest.mark.parametrize('file', [image for image in glob.glob("tests/test_images/*.*")])
 def test_download_file(file):
     with open(file, "br") as f:
@@ -116,7 +117,8 @@ def test_download_file(file):
             # Clean up the directory
             os.remove(filename)
 
-# Should pass if arguments are thrown in, and fail when invalid arguments are thrown in.
+
+# Given both valid and invalid argument, expect passes on the valid ones and fails on the invalid ones.
 @pytest.mark.parametrize('args, expected_args', [
     (['-v', '-as', '-i', '-bd', '1.1.2005', '-ed','1.1.2005', '-sr','hamsters'],
      [True, True, True,  '1.1.2005', '1.1.2005', 'hamsters']),
@@ -142,22 +144,49 @@ def test_parse_args(args, expected_args):
         assert arg == expected_arg
 
 
-#def test_main(args):
-    # Should end up with files in directory.
- #   pass
+# Given arguments:
+# need at least one -v
+# need at least one -sr -bd -ed
+# need at least one -as
+# need at least one with no args
 
+# patch async.main        to return True
+# patch subs_to_download  to return [ [url, date_created], ... ] from the tests/test_images folder
 
+# expect if args = blank, then
+# expect various 'verbose' outputs
+# expect "Scraping complete" output to console
+# expect our images to be downloaded (delete after testing is completed)
+@pytest.mark.parametrize('start, end', [('1.1.2015', '1.1.2015'), ('1.1.2005', datetime.now().strftime('%m.%d.%Y'))])
+@pytest.mark.parametrize('args', [
+    (['-v', '-as', '-bd', '1.1.2015', '-ed', '1.1.2015', '-sr', 'hamsters'], ['-v'], [])
+])
+def test_main(args, start, end):
+    start_listed = start.split('.')
+    end_listed = end.split('.')
 
+    test_begin_epoch = datetime(int(start_listed[0]), int(start_listed[1]),
+                               int(start_listed[2]), 0, 0, 0, 000000, pytz.utc).timestamp()
 
+    test_end_epoch =datetime(int(end_listed[0]), int(end_listed[1]),
+                               int(end_listed[2]), 23, 59, 59, 999999, pytz.utc).timestamp()
 
+    # Default start of our vars that we are looking to check for.
+    test_user_vars = {'begin_epoch': test_begin_epoch, 'end_epoch': test_end_epoch, 'subreddit': 'hamsters',
+                      'async_ran': False, 'imgur_spider': False, 'verbose_on': False, 'quick_run': True}
 
+    # Given the presence of -as, -v, -bd, etc. then we expect those to returned True in user_vars.
+    if '-as' in args:
+        test_user_vars['async_ran'] = True
 
+    if '-bd' in args and '-ed' in args and '-sr' in args:
+        test_user_vars['quick_run']: True
 
+    if '-i' in args:
+        test_user_vars['imgur_spider']: True
 
-
-
-
-
+    if '-v' in args:
+        test_user_vars['verbose_on']: True
 
 
 
