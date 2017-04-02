@@ -6,9 +6,6 @@
 
 # Project specific
 redditimagescraper/modules/config.py
-*.jpg
-*.png
-*.jpeg
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
