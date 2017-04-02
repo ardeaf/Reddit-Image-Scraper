@@ -142,9 +142,9 @@ def test_parse_args(args, expected_args):
         assert arg == expected_arg
 
 
-def test_main(args):
+#def test_main(args):
     # Should end up with files in directory.
-
+ #   pass
 
 
 
