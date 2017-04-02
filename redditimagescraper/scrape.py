@@ -4,8 +4,8 @@ import argparse
 import time
 from datetime import datetime
 
-from delorean import Delorean
-from requests import get
+import requests
+import pytz
 
 from redditimagescraper.modules import async
 from redditimagescraper.modules import accessreddit
@@ -41,7 +41,6 @@ def what_year(start_or_end):
     while True:
         try:
             # Catch the error if the user doesn't enter a convertable string.
-            # Get input from the user.
             year = int(input('\nEnter the year you would like to {} your range: '.format(start_or_end)))
 
             # We only want years between 2005 and today's year.
@@ -94,14 +93,16 @@ def what_day(month, year):
 # Convert the given dates so far to epoch time. Returns time in GMT.
 def convert_dates(dates):
     
-    begin_datetime = Delorean(datetime=datetime(dates['year_b'], dates['month_b'],
-                                                dates['day_b'], 0, 0, 0, 000000), timezone='GMT')
-    user_vars = {'begin_epoch': begin_datetime.epoch}
+    begin_datetime = datetime(dates['year_b'], dates['month_b'],
+                              dates['day_b'], 0, 0, 0, 000000, pytz.utc).timestamp()
+    user_vars = {'begin_epoch': begin_datetime}
 
-    end_datetime = Delorean(datetime=datetime(dates['year_e'], dates['month_e'],
-                                              dates['day_e'], 23, 59, 59, 999999), timezone='GMT')
-    user_vars['end_epoch'] = end_datetime.epoch
+    end_datetime = datetime(dates['year_e'], dates['month_e'],
+                            dates['day_e'], 23, 59, 59, 999999, pytz.utc).timestamp()
 
+    user_vars['end_epoch'] = end_datetime
+    print("start: {} finish {}".format(user_vars['begin_epoch'], user_vars['end_epoch']))
+    print("type: {}".format(type(user_vars['begin_epoch'])))
     return user_vars
 
 
@@ -146,7 +147,7 @@ def get_user_input():
 # File name is date created and the filename.
 # If verbose is True the script prints the name of the file being downloaded and file download time.
 def download_file(url, date_created, verbose):
-    filename = date_created + str(url).split('/')[-1]
+    filename = date_created + "_" + str(url).split('/')[-1]
 
     if verbose:
         download_started_message = 'Downloading file: {}.'
@@ -157,7 +158,7 @@ def download_file(url, date_created, verbose):
 
         dl_time = datetime.now()
 
-        response = get(str(url))
+        response = requests.get(str(url))
         file.write(response.content)
 
         delta = (datetime.now() - dl_time).total_seconds()

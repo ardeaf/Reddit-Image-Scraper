@@ -16,7 +16,7 @@ from .config import extensions
 # parameter and the url.
 async def fetch_image(url, date_created, verbose):
 
-    filename = date_created + str(url).split('/')[-1]
+    filename = date_created + "_" + str(url).split('/')[-1]
 
     # Shows what is being downloaded.
     if verbose:

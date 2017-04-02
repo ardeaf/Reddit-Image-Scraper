@@ -29,7 +29,7 @@ def subs_to_download(subreddit_name, start_date, end_date, exts, verbose):
     submissions = subreddit.submissions(start=start_date, end=end_date)
 
     # for each url I add (url, submission_datetime) to ret_list.
-    ret_list = [[submission.url, datetime.fromtimestamp(submission.created_utc).strftime('%Y%m%d_%H%M%S_')]
+    ret_list = [[submission.url, datetime.fromtimestamp(submission.created_utc).strftime('%Y%m%d_%H%M%S')]
                 for submission in submissions
                 if submission.url.endswith(exts)]
 
