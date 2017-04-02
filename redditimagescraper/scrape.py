@@ -168,7 +168,7 @@ def download_file(url, date_created, verbose):
 
 
 # Can easily expand amount of args using the verbosity as a baseline example.
-def get_args(args):
+def parse_args(args):
     parser = argparse.ArgumentParser(description="Finds all submissions between "
                                                  "given dates and downloads urls"
                                                  "that end in .jpg, jpeg, and png.")
@@ -188,7 +188,7 @@ def get_args(args):
 # Main function.
 def main(args):
     # Get our args stored in parser.
-    parser = get_args(args)
+    parser = args(args)
     verbose = parser.verbose
     begin_date = parser.begin_date
     end_date = parser.end_date
@@ -217,7 +217,7 @@ def main(args):
         if verbose:
             args.append('-v')
         async.main(args)
-        return
+        return True
 
     # Get the subs to download from accessreddit
     subs_to_download = accessreddit.subs_to_download(user_vars['subreddit'],
