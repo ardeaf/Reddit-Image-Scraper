@@ -165,15 +165,15 @@ def test_main(args, start, end):
     start_listed = start.split('.')
     end_listed = end.split('.')
 
-    test_begin_epoch = datetime(int(start_listed[0]), int(start_listed[1]),
-                               int(start_listed[2]), 0, 0, 0, 000000, pytz.utc).timestamp()
+    test_begin_epoch = datetime(int(start_listed[2]), int(start_listed[1]),
+                               int(start_listed[0]), 0, 0, 0, 000000, pytz.utc).timestamp()
 
-    test_end_epoch =datetime(int(end_listed[0]), int(end_listed[1]),
-                               int(end_listed[2]), 23, 59, 59, 999999, pytz.utc).timestamp()
+    test_end_epoch = datetime(int(end_listed[2]), int(end_listed[1]),
+                               int(end_listed[0]), 23, 59, 59, 999999, pytz.utc).timestamp()
 
     # Default start of our vars that we are looking to check for.
     test_user_vars = {'begin_epoch': test_begin_epoch, 'end_epoch': test_end_epoch, 'subreddit': 'hamsters',
-                      'async_ran': False, 'imgur_spider': False, 'verbose_on': False, 'quick_run': True}
+                      'async_ran': False, 'imgur_on': False, 'verbose_on': False, 'quick_ran': True}
 
     # Given the presence of -as, -v, -bd, etc. then we expect those to returned True in user_vars.
     if '-as' in args:
@@ -187,6 +187,7 @@ def test_main(args, start, end):
 
     if '-v' in args:
         test_user_vars['verbose_on']: True
+
 
 
 

@@ -206,16 +206,20 @@ def main(args):
 
         user_vars = convert_dates(dates)
         user_vars['subreddit'] = subreddit
-        user_vars['no_input()_run'] = True
+        user_vars['quick_ran'] = True
+
     else:
         # Get our user's input for which subreddit and dates they wish to use.
         user_vars = get_user_input()
+    # Do future imgur stuff here.
+    user_vars['imgur_on'] = parser.imgur
 
     if parser.async:
         args = [user_vars['subreddit'], user_vars['begin_epoch'], user_vars['end_epoch']]
         # Gotta add in the '-v' argument if user passed it in.
         if verbose:
             user_vars['verbose_on'] = True
+            # Appending -v arg to our call to async since it needs our args added to it again.
             args.append('-v')
 
         async.main(args)
@@ -244,6 +248,7 @@ def main(args):
 
     if verbose:
         print(total_end_msg.format(time.strftime("%H:%M:%S"), (datetime.now() - total_dl_time_start).total_seconds()))
+        user_vars['verbose_on'] = True
 
     print("Scraping complete.")
     return user_vars
