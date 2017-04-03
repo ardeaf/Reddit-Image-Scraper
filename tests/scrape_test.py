@@ -4,7 +4,7 @@ import pytz
 import requests_mock
 import os
 
-import mock
+import unittest.mock as mock
 import pytest
 
 from redditimagescraper import scrape
@@ -95,11 +95,13 @@ def test_get_user_input(test_input, expected):
 
 
 # Given a list of images, should download each one to folder. Check by looking at filenames in current working dir.
-@pytest.mark.parametrize('file', [image for image in glob.glob("tests/test_images/*.*")])
+@pytest.mark.parametrize('file', [image for image in glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                                                            "test_images", "*"))])
 def test_download_file(file):
     with open(file, "br") as f:
         with requests_mock.Mocker() as adapter:
-            image_url = 'mock://testurl.com/' + file
+            file_without_path = os.path.split(file)[1]
+            image_url = 'mock://testurl.com/' + file_without_path
             print(image_url)
             date_created = datetime.now().strftime('%Y%m%d_%H%M%S')
             filename = date_created + "_" + image_url.split('/')[-1]
