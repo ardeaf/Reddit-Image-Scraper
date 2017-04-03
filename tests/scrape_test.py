@@ -2,14 +2,32 @@ import glob
 from datetime import datetime
 import pytz
 import requests_mock
+import io
 import os
+import contextlib
 
+from hypothesis import given, example, event
+from hypothesis.strategies import integers
 import unittest.mock as mock
 import pytest
 
 from redditimagescraper import scrape
 
 
+@given(integers())
+def test_what_year_hypothesis(number):
+    event(str(number))
+    output = io.StringIO()
+    with contextlib.redirect_stdout(output):
+        with mock.patch('builtins.input', return_value=number):
+                if number in range(2005, datetime.now().year + 1):
+                    assert number == scrape.what_year('start') + 5
+                else:
+                    with pytest.raises(ValueError):
+                        scrape.what_year('start', True)
+                        assert '{} is an invalid {}.'.format(number, 'year') in output
+
+"""
 # Given both invalid and valid months, should only return the valid month (last entry)
 @pytest.mark.parametrize('valid_year', [str(year) for year in range(2005, datetime.now().year + 1)])
 def test_what_year(valid_year):
@@ -52,9 +70,14 @@ def test_what_day(valid_day):
 
     with mock.patch('builtins.input', side_effect=days):
         assert scrape.what_day(month, year) == int(valid_day)
+"""
+
+#@given(integers(), integers(), integers())
+#def test_get_user_input(years, months, days):
 
 
-# Given lists of invalid/valid years>months>days, should get the valid date back in epoch time.
+"""
+# Given valid ints should get the valid date back in epoch time.
 @pytest.mark.parametrize('test_input, expected', [
     (['2010-1-1', '2010-1-1'], [1262304000.0, 1262390399.999999]),
     (['2015-1-1', '2016-2-29'], [1420070400.0, 1456790399.999999]),
@@ -92,7 +115,7 @@ def test_get_user_input(test_input, expected):
         assert scrape.get_user_input() == {'begin_epoch': expected[0],
                                            'end_epoch': expected[1],
                                            'subreddit': 'hamsters'}
-
+"""
 
 # Given a list of images, should download each one to folder. Check by looking at filenames in current working dir.
 @pytest.mark.parametrize('file', [image for image in glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)),

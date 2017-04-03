@@ -49,6 +49,7 @@ coverage.xml
 .mr.developer.cfg
 .project
 .pydevproject
+.hypothesis*
 
 # Virtual Env
 venv

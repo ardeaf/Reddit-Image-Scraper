@@ -12,7 +12,7 @@ from redditimagescraper.modules import accessreddit
 from redditimagescraper.modules import config
 
 # Error msg. Global for now.
-error_msg = "\n\t{} is an invalid number."
+error_msg = "\n\t{} is an invalid {}."
 
 
 # Returns subreddit that user wishes to scrape.
@@ -37,55 +37,64 @@ def num_days(month, year):
 
 
 # Ask user input, returns year
-def what_year(start_or_end):
+def what_year(start_or_end, debug=False):
     while True:
         try:
             # Catch the error if the user doesn't enter a convertable string.
-            year = int(input('\nEnter the year you would like to {} your range: '.format(start_or_end)))
+            year_str = input('\nEnter the year you would like to {} your range: '.format(start_or_end))
+            year = int(year_str)
 
             # We only want years between 2005 and today's year.
             if year in range(2005, int(datetime.now().year + 1)):
                 break
             else:
-                print(error_msg.format(year))
-        except:
-            print(error_msg.format('ValueError'))
-            pass
+                print(error_msg.format(year, 'year'))
+                if debug:
+                    raise ValueError
+        except ValueError as e:
+            print(error_msg.format(year, 'year'))
+            raise e
 
     return year
 
 
 # Get start month
-def what_month():
+def what_month(debug=False):
     while True:
         try:
-            month = int(input('\nEnter month: '))
+            str_month = input('\nEnter month: ')
+            month = int(str_month)
             if month in range(1, 13):
                 # SUCCESS!
                 break
             else:
-                print(error_msg.format(month))
-        except:
-            print(error_msg.format("ValueError"))
-            pass
+                print(error_msg.format(str_month, 'month'))
+                if debug:
+                    raise ValueError
+        except ValueError as e:
+            print(error_msg.format(str_month, 'month'))
+            raise e
 
     return month
 
 
 # Get start day
-def what_day(month, year):
+def what_day(month, year, debug=False):
     days_in_month = num_days(month, year)
     while True:
         try:
-            day = int(input('\nEnter day: '))
+            day_str = input('\nEnter day: ')
+            day = int(day_str)
             if day in range(1, days_in_month + 1):
                 # SUCCESS!
                 break
             else:
-                print(error_msg.format(day))
-        except:
-            print(error_msg.format("ValueError"))
-            pass
+                print(error_msg.format(day, 'day'))
+                if debug:
+                    raise ValueError
+        except ValueError as e:
+            print(error_msg.format(day, 'day'))
+            raise e
 
     return day
 
@@ -101,8 +110,9 @@ def convert_dates(dates):
                             dates['day_e'], 23, 59, 59, 999999, pytz.utc).timestamp()
 
     user_vars['end_epoch'] = end_datetime
-    print("start: {} finish {}".format(user_vars['begin_epoch'], user_vars['end_epoch']))
-    print("type: {}".format(type(user_vars['begin_epoch'])))
+    # For debugging
+    # print("start: {} finish {}".format(user_vars['begin_epoch'], user_vars['end_epoch']))
+    # print("type: {}".format(type(user_vars['begin_epoch'])))
     return user_vars
 
 
