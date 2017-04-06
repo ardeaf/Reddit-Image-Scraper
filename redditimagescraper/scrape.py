@@ -39,21 +39,22 @@ def num_days(month, year):
 # Ask user input, returns year
 def what_year(start_or_end, debug=False):
     while True:
+        year_str = input('\nEnter the year you would like to {} your range: '.format(start_or_end))
         try:
             # Catch the error if the user doesn't enter a convertable string.
-            year_str = input('\nEnter the year you would like to {} your range: '.format(start_or_end))
             year = int(year_str)
 
             # We only want years between 2005 and today's year.
             if year in range(2005, int(datetime.now().year + 1)):
                 break
             else:
-                print(error_msg.format(year, 'year'))
+                print(error_msg.format(year_str, 'year'))
                 if debug:
                     raise ValueError
         except ValueError as e:
-            print(error_msg.format(year, 'year'))
-            raise e
+            print(error_msg.format(year_str, 'year'))
+            if debug:
+                raise e
 
     return year
 
@@ -73,7 +74,8 @@ def what_month(debug=False):
                     raise ValueError
         except ValueError as e:
             print(error_msg.format(str_month, 'month'))
-            raise e
+            if debug:
+                raise e
 
     return month
 
@@ -94,7 +96,8 @@ def what_day(month, year, debug=False):
                     raise ValueError
         except ValueError as e:
             print(error_msg.format(day, 'day'))
-            raise e
+            if debug:
+                raise e
 
     return day
 
@@ -204,7 +207,7 @@ def main(args):
     end_date = parser.end_date
     subreddit = parser.subreddit
 
-    # Check if user passed in their own arguments in the command line.
+    # Check if user passed in their own arguments in the command line and update user_vars dict appropriately.
     if begin_date is not None and end_date is not None and subreddit is not None:
         date_list = begin_date.split('.') + end_date.split('.')
         key_list = ['month_b', 'day_b', 'year_b', 'month_e', 'day_e', 'year_e']
@@ -216,30 +219,36 @@ def main(args):
 
         user_vars = convert_dates(dates)
         user_vars['subreddit'] = subreddit
-        user_vars['quick_ran'] = True
+        user_vars['quick_run'] = True
 
     else:
-        # Get our user's input for which subreddit and dates they wish to use.
+        # Get our user's input for which subreddit and dates they wish to use using the tedious get_user_input function
         user_vars = get_user_input()
+
+        # Didn't do a quick run, so set that value to False.
+        user_vars['quick_run'] = False
+
     # Do future imgur stuff here.
-    user_vars['imgur_on'] = parser.imgur
+    user_vars['imgur'] = parser.imgur
 
     if parser.async:
         args = [user_vars['subreddit'], user_vars['begin_epoch'], user_vars['end_epoch']]
         # Gotta add in the '-v' argument if user passed it in.
         if verbose:
-            user_vars['verbose_on'] = True
+            user_vars['verbose'] = True
             # Appending -v arg to our call to async since it needs our args added to it again.
             args.append('-v')
 
         async.main(args)
 
         # Update user_vars to indicate that we ran the async module.
-        user_vars['async_ran'] = True
+        user_vars['async'] = True
         print("Scraping complete.")
         return user_vars
     else:
-        user_vars['async_ran'] = False
+        # Didn't run async, so set that to false.
+        user_vars['async'] = False
+
     # Get the subs to download from accessreddit
     subs_to_download = accessreddit.subs_to_download(user_vars['subreddit'],
                                                      user_vars['begin_epoch'], user_vars['end_epoch'],
@@ -250,7 +259,11 @@ def main(args):
         total_end_msg = 'Downloading completed at {}. Total download time was {} seconds.'
         total_dl_time_start = datetime.now()
         print(total_start_msg.format(time.strftime("%H:%M:%S")))
+        user_vars['verbose'] = True
+    else:
+        user_vars['verbose'] = False
 
+    # This is the actual downloading part.
     for sub_urls in subs_to_download:
         url = sub_urls[0]
         date_created = sub_urls[1]
@@ -258,10 +271,10 @@ def main(args):
 
     if verbose:
         print(total_end_msg.format(time.strftime("%H:%M:%S"), (datetime.now() - total_dl_time_start).total_seconds()))
-        user_vars['verbose_on'] = True
 
     print("Scraping complete.")
     return user_vars
 
 if __name__ == "__main__":
+    test = sys.argv[1:]
     main(sys.argv[1:])

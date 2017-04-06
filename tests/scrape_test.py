@@ -2,81 +2,41 @@ import glob
 from datetime import datetime
 import pytz
 import requests_mock
-import io
 import os
-import contextlib
 
-from hypothesis import given, example, event
-from hypothesis.strategies import integers
+from hypothesis import given, event
+from hypothesis.strategies import integers, text
 import unittest.mock as mock
 import pytest
 
 from redditimagescraper import scrape
 
 
-@given(integers())
-def test_what_year_hypothesis(number):
-    event(str(number))
-    output = io.StringIO()
-    with contextlib.redirect_stdout(output):
-        with mock.patch('builtins.input', return_value=number):
-                if number in range(2005, datetime.now().year + 1):
-                    assert number == scrape.what_year('start') + 5
-                else:
-                    with pytest.raises(ValueError):
-                        scrape.what_year('start', True)
-                        assert '{} is an invalid {}.'.format(number, 'year') in output
+@given(integers(), text(), integers(2005, datetime.now().year))
+def test_what_year_hypothesis(random_nums, random_strings, valid_nums):
+    # Given random_nums, we should get a ValueError if not with valid range of years.
+    # Otherwise we should get back the number in integer form.
+    event(str(random_nums))
+    if random_nums not in range(2005, datetime.now().year + 1):
+        with mock.patch('builtins.input', return_value=random_nums):
+            with pytest.raises(ValueError):
+                scrape.what_year('start', True)
+    else:
+        with mock.patch('builtins.input', return_value=random_nums):
+            assert random_nums == scrape.what_year('start')
 
-"""
-# Given both invalid and valid months, should only return the valid month (last entry)
-@pytest.mark.parametrize('valid_year', [str(year) for year in range(2005, datetime.now().year + 1)])
-def test_what_year(valid_year):
-    years = ["9999", "0", "", " ", "-2015", "-30", str(10 ^ 1000), valid_year]
+    # Given text, should always get a value error.
+    with mock.patch('builtins.input', return_value=random_strings):
+        event(random_strings)
+        with pytest.raises(ValueError):
+            scrape.what_year('start', True)
 
-    with mock.patch('builtins.input', side_effect=years):
-        assert scrape.what_year('start') == int(valid_year)
-
-
-# Given both invalid and valid months, should only return the valid month (last entry)
-@pytest.mark.parametrize('valid_month', [str(month) for month in range(1, 13)])
-def test_what_month(valid_month):
-    months = ["9999", "00000", "0", "", " ", "-8", "-1", str(10 ^ 1000), valid_month]
-
-    with mock.patch('builtins.input', side_effect=months):
-        assert scrape.what_month() == int(valid_month)
+    # Given valid years, should get number back as an integer.
+    with mock.patch('builtins.input', return_value=valid_nums):
+        event(str(valid_nums))
+        assert valid_nums == scrape.what_year('start')
 
 
-# Given both invalid and valid days, should only return the valid day
-@pytest.mark.parametrize('valid_day', [day for day in range(1, 32)])
-def test_what_day(valid_day):
-    days = ["99", "0", "", " ", "-20", str(10 ^ 1000), str(valid_day)]
-
-    if valid_day < 29:
-        # Test February, non-leap year, should return valid day.
-        month = 2
-        year = 2015
-    elif valid_day == 29:
-        # Test February, leap-year, should return valid_day
-        month = 2
-        year = 2016
-    elif valid_day == 30:
-        # Test regular 30-day month (April), should return valid_day
-        month = 4
-        year = 2016
-    elif valid_day == 31:
-        # Test regular 31-day month (January), should return valid_day
-        month = 1
-        year = 2016
-
-    with mock.patch('builtins.input', side_effect=days):
-        assert scrape.what_day(month, year) == int(valid_day)
-"""
-
-#@given(integers(), integers(), integers())
-#def test_get_user_input(years, months, days):
-
-
-"""
 # Given valid ints should get the valid date back in epoch time.
 @pytest.mark.parametrize('test_input, expected', [
     (['2010-1-1', '2010-1-1'], [1262304000.0, 1262390399.999999]),
@@ -115,18 +75,18 @@ def test_get_user_input(test_input, expected):
         assert scrape.get_user_input() == {'begin_epoch': expected[0],
                                            'end_epoch': expected[1],
                                            'subreddit': 'hamsters'}
-"""
+
 
 # Given a list of images, should download each one to folder. Check by looking at filenames in current working dir.
 @pytest.mark.parametrize('file', [image for image in glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                                                             "test_images", "*"))])
-def test_download_file(file):
+def test_download_file(file, date_created=datetime.now().strftime('%Y%m%d_%H%M%S')):
     with open(file, "br") as f:
         with requests_mock.Mocker() as adapter:
             file_without_path = os.path.split(file)[1]
             image_url = 'mock://testurl.com/' + file_without_path
             print(image_url)
-            date_created = datetime.now().strftime('%Y%m%d_%H%M%S')
+
             filename = date_created + "_" + image_url.split('/')[-1]
 
             # Reads the file we opened and stores the byte string in image_content
@@ -145,15 +105,14 @@ def test_download_file(file):
 
 # Given both valid and invalid argument, expect passes on the valid ones and fails on the invalid ones.
 @pytest.mark.parametrize('args, expected_args', [
-    (['-v', '-as', '-i', '-bd', '1.1.2005', '-ed','1.1.2005', '-sr','hamsters'],
-     [True, True, True,  '1.1.2005', '1.1.2005', 'hamsters']),
-    (['-v', '-as', '-i', '-bd', '1.1.2005', '-sr', 'hamsters'], [True, True, True,  '1.1.2005', 'hamsters']),
+    (['-v', '-as', '-i', '-bd', '1.1.2005', '-ed', '1.1.2005', '-sr', 'hamsters'],
+     [True, True, True, '1.1.2005', '1.1.2005', 'hamsters']),
+    (['-v', '-as', '-i', '-bd', '1.1.2005', '-sr', 'hamsters'], [True, True, True, '1.1.2005', 'hamsters']),
     ([], [False, False, False]),
-    pytest.mark.xfail((['-v','test'], [True, False, False])),
+    pytest.mark.xfail((['-v', 'test'], [True, False, False])),
     pytest.mark.xfail((['-bd'], [False, False, False]))
 ])
 def test_parse_args(args, expected_args):
-
     parser = scrape.parse_args(args)
 
     arg_list = list()
@@ -183,56 +142,57 @@ def test_parse_args(args, expected_args):
 # expect "Scraping complete" output to console
 # expect our images to be downloaded (delete after testing is completed)
 @pytest.mark.parametrize('start, end', [('1.1.2015', '1.1.2015'), ('1.1.2005', datetime.now().strftime('%m.%d.%Y'))])
-@pytest.mark.parametrize('args', [
-    (['-v', '-as', '-bd', '1.1.2015', '-ed', '1.1.2015', '-sr', 'hamsters'], ['-v'], [])
-])
+@pytest.mark.parametrize('args', [['-v', '-as', '-bd', '1.1.2015', '-ed', '1.1.2015', '-sr', 'hamsters'], ['-v'], []])
 def test_main(args, start, end):
-    start_listed = start.split('.')
-    end_listed = end.split('.')
-
-    test_begin_epoch = datetime(int(start_listed[2]), int(start_listed[1]),
-                               int(start_listed[0]), 0, 0, 0, 000000, pytz.utc).timestamp()
-
-    test_end_epoch = datetime(int(end_listed[2]), int(end_listed[1]),
-                               int(end_listed[0]), 23, 59, 59, 999999, pytz.utc).timestamp()
-
     # Default start of our vars that we are looking to check for.
-    test_user_vars = {'begin_epoch': test_begin_epoch, 'end_epoch': test_end_epoch, 'subreddit': 'hamsters',
-                      'async_ran': False, 'imgur_on': False, 'verbose_on': False, 'quick_ran': True}
+    test_user_vars = {'subreddit': 'hamsters', 'async': False, 'imgur': False, 'verbose': False, 'quick_run': False}
 
     # Given the presence of -as, -v, -bd, etc. then we expect those to returned True in user_vars.
     if '-as' in args:
-        test_user_vars['async_ran'] = True
+        test_user_vars['async'] = True
 
     if '-bd' in args and '-ed' in args and '-sr' in args:
-        test_user_vars['quick_run']: True
+        start = args[args.index("-bd") + 1]
+        end = args[args.index("-ed") + 1]
+        test_user_vars['quick_run'] = True
 
     if '-i' in args:
-        test_user_vars['imgur_spider']: True
+        test_user_vars['imgur'] = True
 
     if '-v' in args:
-        test_user_vars['verbose_on']: True
+        test_user_vars['verbose'] = True
 
+    start_listed = start.split('.')
+    end_listed = end.split('.')
 
+    test_user_vars['begin_epoch'] = datetime(int(start_listed[2]), int(start_listed[0]),
+                                             int(start_listed[1]), 0, 0, 0, 000000, pytz.utc).timestamp()
 
+    test_user_vars['end_epoch'] = datetime(int(end_listed[2]), int(end_listed[0]),
+                                           int(end_listed[1]), 23, 59, 59, 999999, pytz.utc).timestamp()
 
+    # Inputs that will be passed into the mock.patch('builtins.input') to mock input()
+    input_list = [start_listed[2], start_listed[0], start_listed[1], end_listed[2], end_listed[0], end_listed[1]]
 
+    # Update our input list to include the subreddit.
+    input_list.append(test_user_vars['subreddit'])
 
+    # Helper lists of files and submissions that we are "downloading"
+    files_to_mock_download = [image for image in glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                                                        "test_images", "*"))]
+    test_subs_to_download = ['mock://testurl.com/' + filename for filename in files_to_mock_download]
 
+    # ALL THE MOCKS!
+    with mock.patch('redditimagescraper.modules.accessreddit.subs_to_download',
+                    return_value=[[datetime.now().strftime('%m%d%Y'), submission]
+                                 for submission in test_subs_to_download]), \
+         mock.patch('builtins.input', side_effect=input_list), \
+         mock.patch('redditimagescraper.modules.async.main',        # Not testing Async here, return True if called.
+                    return_value=True), \
+         mock.patch('redditimagescraper.scrape.download_file', \
+                    side_effect=[test_download_file(file, datetime.now().strftime('%m%d%Y'))
+                                for file in files_to_mock_download]):
 
+        actual_user_vars = scrape.main(args)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        assert actual_user_vars == test_user_vars
