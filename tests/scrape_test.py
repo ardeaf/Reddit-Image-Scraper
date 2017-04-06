@@ -15,27 +15,76 @@ from redditimagescraper import scrape
 @given(integers(), text(), integers(2005, datetime.now().year))
 def test_what_year_hypothesis(random_nums, random_strings, valid_nums):
     # Given random_nums, we should get a ValueError if not with valid range of years.
-    # Otherwise we should get back the number in integer form.
     event(str(random_nums))
-    if random_nums not in range(2005, datetime.now().year + 1):
+    if random_nums not in list(range(2005, datetime.now().year + 1)):
         with mock.patch('builtins.input', return_value=random_nums):
             with pytest.raises(ValueError):
                 scrape.what_year('start', True)
-    else:
-        with mock.patch('builtins.input', return_value=random_nums):
-            assert random_nums == scrape.what_year('start')
 
     # Given text, should always get a value error.
+    if random_strings.isdigit():
+        random_strings = str(int(random_strings))
+
     with mock.patch('builtins.input', return_value=random_strings):
         event(random_strings)
-        with pytest.raises(ValueError):
-            scrape.what_year('start', True)
+        if random_strings not in str(list(range(2005, datetime.now().year))):
+            with pytest.raises(ValueError):
+                scrape.what_year('start', True)
 
     # Given valid years, should get number back as an integer.
     with mock.patch('builtins.input', return_value=valid_nums):
         event(str(valid_nums))
         assert valid_nums == scrape.what_year('start')
 
+@given(integers(), text(), integers(1, 12))
+def test_what_month_hypothesis(random_nums, random_strings, valid_nums):
+    # Given random_nums, we should get a ValueError if not with valid range of years.
+    # Otherwise we should get back the number in integer form.
+    event(str(random_nums))
+    if random_nums not in range(1, 13):
+        with mock.patch('builtins.input', return_value=random_nums):
+            with pytest.raises(ValueError):
+                scrape.what_month(True)
+
+    # Given text, should always get a value error.
+    event(random_strings)
+    if random_strings.isdigit():
+        random_strings = str(int(random_strings))
+
+    if random_strings not in str(list(range(1, 13))):
+        with mock.patch('builtins.input', return_value=random_strings):
+            with pytest.raises(ValueError):
+                scrape.what_month(True)
+
+    # Given valid years, should get number back as an integer.
+    with mock.patch('builtins.input', return_value=valid_nums):
+        event(str(valid_nums))
+        assert valid_nums == scrape.what_month(True)
+
+# Given both invalid and valid days, should only return the valid day
+@pytest.mark.parametrize('valid_day', [day for day in range(1, 32)])
+def test_what_day(valid_day):
+    days = ["99", "0", "", " ", "-20", str(10 ^ 10000000), str(valid_day)]
+
+    if valid_day < 29:
+        # Test February, non-leap year, should return valid day.
+        month = 2
+        year = 2015
+    elif valid_day == 29:
+        # Test February, leap-year, should return valid_day
+        month = 2
+        year = 2016
+    elif valid_day == 30:
+        # Test regular 30-day month (April), should return valid_day
+        month = 4
+        year = 2016
+    elif valid_day == 31:
+        # Test regular 31-day month (January), should return valid_day
+        month = 1
+        year = 2016
+
+    with mock.patch('builtins.input', side_effect=days):
+        assert scrape.what_day(month, year) == int(valid_day)
 
 # Given valid ints should get the valid date back in epoch time.
 @pytest.mark.parametrize('test_input, expected', [
@@ -85,7 +134,6 @@ def test_download_file(file, date_created=datetime.now().strftime('%Y%m%d_%H%M%S
         with requests_mock.Mocker() as adapter:
             file_without_path = os.path.split(file)[1]
             image_url = 'mock://testurl.com/' + file_without_path
-            print(image_url)
 
             filename = date_created + "_" + image_url.split('/')[-1]
 
@@ -137,13 +185,11 @@ def test_parse_args(args, expected_args):
 # patch async.main        to return True
 # patch subs_to_download  to return [ [url, date_created], ... ] from the tests/test_images folder
 
-# expect if args = blank, then
-# expect various 'verbose' outputs
-# expect "Scraping complete" output to console
+# Look for various verbose inputs when passing in -v, otherwise just the dictionary should match at the end.
 # expect our images to be downloaded (delete after testing is completed)
 @pytest.mark.parametrize('start, end', [('1.1.2015', '1.1.2015'), ('1.1.2005', datetime.now().strftime('%m.%d.%Y'))])
 @pytest.mark.parametrize('args', [['-v', '-as', '-bd', '1.1.2015', '-ed', '1.1.2015', '-sr', 'hamsters'], ['-v'], []])
-def test_main(args, start, end):
+def test_main(args, start, end, capsys):
     # Default start of our vars that we are looking to check for.
     test_user_vars = {'subreddit': 'hamsters', 'async': False, 'imgur': False, 'verbose': False, 'quick_run': False}
 
@@ -186,13 +232,24 @@ def test_main(args, start, end):
     with mock.patch('redditimagescraper.modules.accessreddit.subs_to_download',
                     return_value=[[datetime.now().strftime('%m%d%Y'), submission]
                                  for submission in test_subs_to_download]), \
-         mock.patch('builtins.input', side_effect=input_list), \
-         mock.patch('redditimagescraper.modules.async.main',        # Not testing Async here, return True if called.
-                    return_value=True), \
-         mock.patch('redditimagescraper.scrape.download_file', \
-                    side_effect=[test_download_file(file, datetime.now().strftime('%m%d%Y'))
+        mock.patch('builtins.input', side_effect=input_list), \
+        mock.patch('redditimagescraper.modules.async.main',        # Not testing Async here, return True if called.
+                   return_value=True), \
+        mock.patch('redditimagescraper.scrape.download_file',
+                   side_effect=[test_download_file(file, datetime.now().strftime('%m%d%Y'))
                                 for file in files_to_mock_download]):
 
         actual_user_vars = scrape.main(args)
+
+        if test_user_vars['verbose']:
+            actual_output = capsys.readouterr()[0]
+            expected_output = ["downloaded in", "Downloading file", "Downloading started", "Downloading completed"]
+
+            if test_user_vars['async']:
+                # No verbosity gets printed in async
+                expected_output = []
+
+            for output in expected_output:
+                assert output in actual_output
 
         assert actual_user_vars == test_user_vars

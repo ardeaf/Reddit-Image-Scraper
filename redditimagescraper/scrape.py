@@ -62,8 +62,8 @@ def what_year(start_or_end, debug=False):
 # Get start month
 def what_month(debug=False):
     while True:
+        str_month = input('\nEnter month: ')
         try:
-            str_month = input('\nEnter month: ')
             month = int(str_month)
             if month in range(1, 13):
                 # SUCCESS!
@@ -84,8 +84,8 @@ def what_month(debug=False):
 def what_day(month, year, debug=False):
     days_in_month = num_days(month, year)
     while True:
+        day_str = input('\nEnter day: ')
         try:
-            day_str = input('\nEnter day: ')
             day = int(day_str)
             if day in range(1, days_in_month + 1):
                 # SUCCESS!
