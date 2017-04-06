@@ -95,7 +95,7 @@ def what_day(month, year, debug=False):
                 if debug:
                     raise ValueError
         except ValueError as e:
-            print(error_msg.format(day, 'day'))
+            print(error_msg.format(day_str, 'day'))
             if debug:
                 raise e
 

@@ -64,7 +64,7 @@ def test_what_month_hypothesis(random_nums, random_strings, valid_nums):
 # Given both invalid and valid days, should only return the valid day
 @pytest.mark.parametrize('valid_day', [day for day in range(1, 32)])
 def test_what_day(valid_day):
-    days = ["99", "0", "", " ", "-20", str(10 ^ 10000000), str(valid_day)]
+    days = ["", " ", "99", "0", "-20", str(10 ^ 10000000), str(valid_day)]
 
     if valid_day < 29:
         # Test February, non-leap year, should return valid day.
