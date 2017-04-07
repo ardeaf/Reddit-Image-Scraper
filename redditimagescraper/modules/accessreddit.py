@@ -63,5 +63,5 @@ def subs_to_download(subreddit_name, date_list, exts, verbose):
     return ret_list
 
 if __name__ == '__main__':
-    reddit = reddit_login()
-    print(reddit)
+    print("Nothing to see here! Move along!")
+    exit()
