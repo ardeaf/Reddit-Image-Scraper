@@ -115,17 +115,15 @@ def daterange(start_date, end_date):
 
 
 # Convert the given start and end date into a list of days in epoch time.
-def convert_dates(dates):
+def convert_dates(year_b, month_b, day_b, year_e, month_e, day_e):
 
     # This list will contain days by their epoch start time and end time: [[epoch_start, epoch end], ...]
     epoch_date_range_list = list()
 
-    for single_date_by_epoch in daterange(date(int(dates['year_b']), int(dates['month_b']), int(dates['day_b'])),
-                                          date(int(dates['year_e']), int(dates['month_e']), int(dates['day_e']))):
+    for single_date_by_epoch in daterange(date(year_b, month_b, day_b), date(year_e, month_e, day_e)):
         epoch_date_range_list.append(single_date_by_epoch)
 
-    print(epoch_date_range_list)
-    return {'epoch_date_range': epoch_date_range_list}
+    return epoch_date_range_list
 
 
 # Take user input and convert to epoch time
@@ -137,7 +135,7 @@ def get_user_input():
 
     dates['day_b'] = what_day(dates['month_b'], dates['year_b'])
 
-    start_date = str(dates['month_b']) + "/" + str(dates['day_b']) + "/" + str(dates['year_b'])
+    start_date = str(dates['month_b']) + "." + str(dates['day_b']) + "." + str(dates['year_b'])
     print("\nStart date is: {}.\n".format(start_date))
 
     # End Date
@@ -148,19 +146,16 @@ def get_user_input():
 
     dates['day_e'] = what_day(dates['month_e'], dates['year_e'])
 
-    end_date = str(dates['month_e']) + "/" + str(dates['day_e']) + "/" + str(dates['year_e'])
+    end_date = str(dates['month_e']) + "." + str(dates['day_e']) + "." + str(dates['year_e'])
 
     print("\nEnd date is: {}.\n".format(end_date))
 
     # Dictionary where we will store the user's input
     print('\nEnter subreddit you wish to scrape: ')
-    user_vars = {'subreddit': subreddit()}
 
-    print("\nDownloading all {} from /r/{} between dates {} and {}".format(str(config.extensions),
-                                                                           str(user_vars['subreddit']),
-                                                                           start_date, end_date))
-
-    user_vars.update(convert_dates(dates))
+    user_vars = {'subreddit': subreddit(), 'start_date': start_date, 'end_date': end_date,
+                 'epoch_date_range': convert_dates(int(dates['year_b']), int(dates['month_b']), int(dates['day_b']),
+                                                   int(dates['year_e']), int(dates['month_e']), int(dates['day_e']))}
 
     return user_vars
 
@@ -218,17 +213,11 @@ def main(args):
 
     # Check if user passed in their own arguments in the command line and update user_vars dict appropriately.
     if begin_date is not None and end_date is not None and subreddit is not None:
-        date_list = begin_date.split('.') + end_date.split('.')
-        key_list = ['month_b', 'day_b', 'year_b', 'month_e', 'day_e', 'year_e']
+        month_b, day_b, year_b = map(int, begin_date.split('.'))
+        month_e, day_e, year_e = map(int, end_date.split('.'))
 
-        dates = dict()
-
-        for key, value in zip(key_list, date_list):
-            dates[key] = int(value)
-
-        user_vars = convert_dates(dates)
-        user_vars['subreddit'] = subreddit
-        user_vars['quick_run'] = True
+        user_vars = {'epoch_date_range': convert_dates(year_b, month_b, day_b, year_e, month_e, day_e),
+                     'subreddit': subreddit, 'quick_run': True, 'start_date': begin_date, 'end_date': end_date}
 
     else:
         # Get our user's input for which subreddit and dates they wish to use using the tedious get_user_input function
@@ -240,8 +229,11 @@ def main(args):
     # Do future imgur stuff here.
     user_vars['imgur'] = parser.imgur
 
+    print("\nDownloading all {} from /r/{} between dates {} and {}".format(
+        str(config.extensions), str(user_vars['subreddit']), user_vars['start_date'], user_vars['end_date']))
+
     if parser.async:
-        args = [user_vars['subreddit'], user_vars['begin_epoch'], user_vars['end_epoch']]
+        args = [user_vars['subreddit'], user_vars['start_date'], user_vars['end_date']]
         # Gotta add in the '-v' argument if user passed it in.
         if verbose:
             user_vars['verbose'] = True

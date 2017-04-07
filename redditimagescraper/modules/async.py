@@ -7,6 +7,7 @@ from datetime import datetime
 import aiofiles
 import aiohttp
 
+import redditimagescraper.scrape
 from . import accessreddit
 from .config import extensions
 
@@ -61,8 +62,8 @@ def get_args(args):
 
     parser.add_argument('-v', '--verbose', action='store_true', help='Print verbose output.', default=False)
     parser.add_argument('subreddit', help='Subreddit you intend to scrape.')
-    parser.add_argument('bd_epoch', help='Begin date, in epoch time.', type=float)
-    parser.add_argument('ed_epoch', help='End date, in epoch time.', type=float)
+    parser.add_argument('begin_date', help='Begin date.')
+    parser.add_argument('end_date', help='End date.')
 
     return parser.parse_args(args)
 
@@ -76,11 +77,16 @@ async def work(args):
     # Get the args.
     verbose = args.verbose
     designated_sub_reddit = args.subreddit
-    bd_epoch = args.bd_epoch
-    ed_epoch = args.ed_epoch
+    begin_date = args.begin_date
+    end_date = args.end_date
+
+    month_b, day_b, year_b = map(int, begin_date.split('.'))
+    month_e, day_e, year_e = map(int, end_date.split('.'))
+
+    date_list = redditimagescraper.scrape.convert_dates(year_b, month_b, day_b, year_e, month_e, day_e)
 
     # Gets the submissions we're going to download.
-    subs_to_download = accessreddit.subs_to_download(designated_sub_reddit, bd_epoch, ed_epoch, extensions, verbose)
+    subs_to_download = accessreddit.subs_to_download(designated_sub_reddit, date_list, extensions, verbose)
 
     if verbose:
         total_start_msg = 'Downloading started at {}'

@@ -6,17 +6,6 @@ import prawcore.exceptions
 
 from . import config
 
-
-def reddit_login():
-    reddit = praw.Reddit(username=config.username,
-                         password=config.password,
-                         client_secret=config.client_secret,
-                         client_id=config.client_id,
-                         user_agent="redditimagescraper, created by ardeaf")
-
-    return reddit
-
-
 # Returns a list of urls posted to the subreddit_name between start_date and end_date.
 # The list is in the form: [url, date_string], [url, date_string], [url, date_string], ... ]
 def subs_to_download(subreddit_name, date_list, exts, verbose):
@@ -25,7 +14,11 @@ def subs_to_download(subreddit_name, date_list, exts, verbose):
         print("Logging into Reddit.")
         login_time = datetime.now()
 
-    reddit = reddit_login()
+    reddit = praw.Reddit(username=config.username,
+                         password=config.password,
+                         client_secret=config.client_secret,
+                         client_id=config.client_id,
+                         user_agent="redditimagescraper, created by ardeaf")
 
     if verbose:
         print("Login complete, took {} seconds.".format((datetime.now() - login_time).total_seconds()))
@@ -42,13 +35,15 @@ def subs_to_download(subreddit_name, date_list, exts, verbose):
         start_date, end_date = date
 
         if verbose:
-            print("Retrieving submission urls dated {}".format(datetime.utcfromtimestamp(start_date).strftime("%m/%d/%Y")))
+            print("Retrieving submission urls dated {}".format(
+                datetime.utcfromtimestamp(start_date).strftime("%m/%d/%Y")))
 
         submissions_request = subreddit.submissions(start=start_date, end=end_date)
 
         while True:
             try:
-                ret_list += [[submission.url, datetime.utcfromtimestamp(submission.created_utc).strftime('%Y%m%d_%H%M%S')]
+                ret_list += [[submission.url,
+                              datetime.utcfromtimestamp(submission.created_utc).strftime('%Y%m%d_%H%M%S')]
                              for submission in submissions_request
                              if submission.url.endswith(exts)]
                 break
