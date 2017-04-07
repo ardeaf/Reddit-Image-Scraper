@@ -2,7 +2,7 @@ import sys
 
 import argparse
 import time
-from datetime import datetime
+from datetime import datetime, timedelta, date
 
 import requests
 import pytz
@@ -102,21 +102,30 @@ def what_day(month, year, debug=False):
     return day
 
 
-# Convert the given dates so far to epoch time. Returns time in GMT.
+# Helper generator for convert_dates.  Given a start and end date, yields start time and end time for each day in epoch.
+def daterange(start_date, end_date):
+    for n in range(int((end_date - start_date).days) + 1):
+        date = start_date + timedelta(n)
+
+        begin_datetime = datetime(date.year, date.month, date.day, 0, 0, 0, 000000, pytz.utc).timestamp()
+
+        end_datetime = datetime(date.year, date.month, date.day, 23, 59, 59, 999999, pytz.utc).timestamp()
+
+        yield [begin_datetime, end_datetime]
+
+
+# Convert the given start and end date into a list of days in epoch time.
 def convert_dates(dates):
-    
-    begin_datetime = datetime(dates['year_b'], dates['month_b'],
-                              dates['day_b'], 0, 0, 0, 000000, pytz.utc).timestamp()
-    user_vars = {'begin_epoch': begin_datetime}
 
-    end_datetime = datetime(dates['year_e'], dates['month_e'],
-                            dates['day_e'], 23, 59, 59, 999999, pytz.utc).timestamp()
+    # This list will contain days by their epoch start time and end time: [[epoch_start, epoch end], ...]
+    epoch_date_range_list = list()
 
-    user_vars['end_epoch'] = end_datetime
-    # For debugging
-    # print("start: {} finish {}".format(user_vars['begin_epoch'], user_vars['end_epoch']))
-    # print("type: {}".format(type(user_vars['begin_epoch'])))
-    return user_vars
+    for single_date_by_epoch in daterange(date(int(dates['year_b']), int(dates['month_b']), int(dates['day_b'])),
+                                          date(int(dates['year_e']), int(dates['month_e']), int(dates['day_e']))):
+        epoch_date_range_list.append(single_date_by_epoch)
+
+    print(epoch_date_range_list)
+    return {'epoch_date_range': epoch_date_range_list}
 
 
 # Take user input and convert to epoch time
@@ -142,7 +151,7 @@ def get_user_input():
     end_date = str(dates['month_e']) + "/" + str(dates['day_e']) + "/" + str(dates['year_e'])
 
     print("\nEnd date is: {}.\n".format(end_date))
-    
+
     # Dictionary where we will store the user's input
     print('\nEnter subreddit you wish to scrape: ')
     user_vars = {'subreddit': subreddit()}
@@ -251,7 +260,7 @@ def main(args):
 
     # Get the subs to download from accessreddit
     subs_to_download = accessreddit.subs_to_download(user_vars['subreddit'],
-                                                     user_vars['begin_epoch'], user_vars['end_epoch'],
+                                                     user_vars['epoch_date_range'],
                                                      config.extensions, verbose)
 
     if verbose:
