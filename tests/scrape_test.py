@@ -21,10 +21,6 @@ def test_what_year_hypothesis(random_nums, random_strings, valid_nums):
             with pytest.raises(ValueError):
                 scrape.what_year('start', True)
 
-    # Given text, should always get a value error.
-    if random_strings.isdigit():
-        random_strings = str(int(random_strings))
-
     with mock.patch('builtins.input', return_value=random_strings):
         event(random_strings)
         if random_strings not in str(list(range(2005, datetime.now().year))):
@@ -45,11 +41,6 @@ def test_what_month_hypothesis(random_nums, random_strings, valid_nums):
         with mock.patch('builtins.input', return_value=random_nums):
             with pytest.raises(ValueError):
                 scrape.what_month(True)
-
-    # Given text, should always get a value error.
-    event(random_strings)
-    if random_strings.isdigit():
-        random_strings = str(int(random_strings))
 
     if random_strings not in str(list(range(1, 13))):
         with mock.patch('builtins.input', return_value=random_strings):
@@ -120,10 +111,16 @@ def test_get_user_input(test_input, expected):
 
     user_input = years_b + months_b + days_b + years_e + months_e + days_e + subreddit
 
+    expected_first_epoch_time, expected_last_epoch_time = expected
     with mock.patch('builtins.input', side_effect=user_input):
-        assert scrape.get_user_input() == {'begin_epoch': expected[0],
-                                           'end_epoch': expected[1],
-                                           'subreddit': 'hamsters'}
+        test_user_vars = scrape.get_user_input()
+        test_first_epoch_time, test_last_epoch_time, test_subreddit = test_user_vars['epoch_date_range'][0][0], \
+                                                                      test_user_vars['epoch_date_range'][-1][1], \
+                                                                      test_user_vars['subreddit']
+
+        assert test_first_epoch_time == expected_first_epoch_time
+        assert test_last_epoch_time == expected_last_epoch_time
+        assert test_subreddit == subreddit[0]
 
 
 # Given a list of images, should download each one to folder. Check by looking at filenames in current working dir.
