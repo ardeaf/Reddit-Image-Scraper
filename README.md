@@ -52,7 +52,7 @@ Run the script:
 
 ## Tests
 
-If you'd like to contribute or run tests you'll need to install the dev requirements: `pip install -r requirements-dev.txt`
+If you'd like to contribute or run tests you'll need to install the dev requirements: `pip install -r dev-requirements.txt`
 Then run pytest from the root directory (above tests)
 
 ## Contributors
