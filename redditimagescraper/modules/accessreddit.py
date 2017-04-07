@@ -2,6 +2,7 @@ import time
 from datetime import datetime
 
 import praw
+import prawcore.exceptions
 
 from . import config
 
@@ -20,18 +21,35 @@ def bot_login():
 # The list is in the form: [url, date_string], [url, date_string], [url, date_string], ... ]
 def subs_to_download(subreddit_name, start_date, end_date, exts, verbose):
 
-    retrieve_time = datetime.now()
-    print("Retrieving submissions from {}. Started at {}".format(subreddit_name, time.strftime("%H:%M:%S")))
+    if verbose:
+        print("Logging into Reddit.")
+        login_time = datetime.now()
 
     reddit = bot_login()
-    subreddit = reddit.subreddit(subreddit_name)
 
-    submissions = subreddit.submissions(start=start_date, end=end_date)
+    if verbose:
+        print("Login complete, took {} seconds.".format(datetime.now() - login_time).total_seconds())
 
-    # for each url I add (url, submission_datetime) to ret_list.
-    ret_list = [[submission.url, datetime.fromtimestamp(submission.created_utc).strftime('%Y%m%d_%H%M%S')]
-                for submission in submissions
-                if submission.url.endswith(exts)]
+    while True:
+        if verbose:
+            retrieve_time = datetime.now()
+            print("Retrieving submissions from {}. Started at {}".format(subreddit_name, time.strftime("%H:%M:%S")))
+
+        subreddit = reddit.subreddit(subreddit_name)
+        submissions = subreddit.submissions(start=start_date, end=end_date)
+
+        try:
+            # for each url I add (url, submission_datetime) to ret_list.
+            # Exceptions in praw get raised when you call from the api object, not when you create it.
+            ret_list = [[submission.url, datetime.fromtimestamp(submission.created_utc).strftime('%Y%m%d_%H%M%S')]
+                        for submission in submissions
+                        if submission.url.endswith(exts)]
+            break
+
+        except prawcore.exceptions.Redirect and prawcore.exceptions.BadRequest as e:
+            if verbose:
+                print("\n!! Exception Raised: {}".format(e))
+            subreddit_name = input("{} does not exist. Please re-enter a valid subreddit: ".format(subreddit_name))
 
     if verbose:
         delta = (datetime.now() - retrieve_time).total_seconds()
