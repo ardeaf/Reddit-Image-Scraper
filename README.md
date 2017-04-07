@@ -45,6 +45,8 @@ Run the script:
 ```
 -v Verbose output.
 -as Downloads asynchronously. Extreme speed increase. Will probably max out your bandwidth.
+-bd, -ed, -sr These three have to be passed together.  Allows inputting scrape info from the cli.
+-bd is for begin date, -ed is for end date, and -sr is for the subreddit.
 -h For more info on args
 ```
 
