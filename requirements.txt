@@ -4,7 +4,6 @@ appdirs==1.4.3
 async-timeout==1.2.0
 Babel==2.3.4
 chardet==2.3.0
-Delorean==0.6.0
 humanize==0.5.1
 multidict==2.1.4
 packaging==16.8
